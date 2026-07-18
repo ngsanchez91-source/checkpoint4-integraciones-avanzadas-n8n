@@ -1,0 +1,421 @@
+{
+  "name": "Checkpoint 4 - Integraciones Avanzadas",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0457a2b2-b3f7-4eef-9e63-a181a8a2ecaf",
+      "name": "01 Gmail - Entrada de soporte",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QKW4uRvzJJXG6ssT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2d3ef84f-29bd-4d05-acba-63dab3b6eaeb",
+              "leftValue": "={{ $json.Subject }}",
+              "rightValue": "Auto-reply",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "e6110feb-f0dc-4f0f-9bfe-02c104310594",
+              "leftValue": "={{ $json.Subject }}",
+              "rightValue": "Out of office",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "0ceda6e6-84a5-47a0-9401-3fb28901a069",
+              "leftValue": "={{ $json.Subject }}",
+              "rightValue": "Undeliverable",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "74b73b9d-4c03-44a3-a8ad-50368a99974c",
+              "leftValue": "={{ $json.From }}",
+              "rightValue": "no-reply@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "0acf6cbf-45b6-4014-a4f9-12e41f95ef50",
+      "name": "02 IF - Bloquear respuestas automáticas"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6d58ea37-898a-41d0-a479-5b97a1c3e419",
+              "name": "cliente_email",
+              "value": "={{ ($json.From.match(/<([^>]+)>/) || [null, $json.From])[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "68b8882c-7c82-4763-aed2-44e67513cef7",
+              "name": "asunto",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "4a290bea-f93e-40ea-9eaf-13bb3b70bdd0",
+              "name": "mensaje",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        96
+      ],
+      "id": "ada0b9e0-fc69-49c5-bb9c-60e7add1bd7e",
+      "name": "03 Edit Fields - Normalizar datos del cliente"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "search",
+        "limit": 1,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "email|string",
+                    "value": "={{ $json.cliente_email }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        96
+      ],
+      "id": "4012ea40-7bf4-4894-871f-afc0a2a5dc52",
+      "name": "04 HubSpot - Buscar contacto por email",
+      "alwaysOutputData": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "be44qsSNlLcjoR58",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1be55bbd-00cd-4701-9c69-95537e975d32",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        96
+      ],
+      "id": "737ac66d-8023-41f7-a260-d3d09de5e658",
+      "name": "05 IF - Contacto existe"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ $('03 Edit Fields - Normalizar datos del cliente').item.json.cliente_email }}",
+        "additionalFields": {
+          "firstName": "Cliente Gmail"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        304
+      ],
+      "id": "40535423-ae4c-4aa6-aea9-d275dcd5f4fa",
+      "name": "06 HubSpot - Crear contacto nuevo",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "be44qsSNlLcjoR58",
+          "name": "HubSpot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ 'RE: ' + $('03 Edit Fields - Normalizar datos del cliente').item.json.asunto }}",
+        "message": "={{ \n'Hola,\\n\\n' +\n'Gracias por contactarnos. Hemos recibido tu mensaje sobre: \"' +\n$('03 Edit Fields - Normalizar datos del cliente').item.json.asunto +\n'\".\\n\\n' +\n'Estamos revisando tu solicitud y te responderemos a la brevedad.\\n\\n' +\n'Este mensaje quedó guardado como borrador para revisión humana antes del envío.\\n\\n' +\n'Saludos.'\n}}",
+        "options": {
+          "sendTo": "={{ $('03 Edit Fields - Normalizar datos del cliente').item.json.cliente_email }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        80
+      ],
+      "id": "35beee42-f281-4968-88ed-7c6a51fb550c",
+      "name": "07 Gmail - Crear borrador HITL",
+      "webhookId": "fa34b14c-4965-43e3-a623-04b51be48492",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QKW4uRvzJJXG6ssT",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3293e93f-a090-4893-84e0-8bf3777e5d5a",
+              "name": "evento",
+              "value": "Borrador creado para revisión humana",
+              "type": "string"
+            },
+            {
+              "id": "9b47d1de-841e-4c41-aa00-9a17d08795a4",
+              "name": "cliente_email",
+              "value": "={{ $('03 Edit Fields - Normalizar datos del cliente').item.json.cliente_email }}",
+              "type": "string"
+            },
+            {
+              "id": "095c3f2d-a5fa-4d09-ab23-cd5b788156ca",
+              "name": "asunto",
+              "value": "={{ $('03 Edit Fields - Normalizar datos del cliente').item.json.asunto }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1264,
+        80
+      ],
+      "id": "82023878-d2c6-4767-bce9-7daa712b88cf",
+      "name": "08 Edit Fields - Limpiar payload para Slack"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0BJ9N35ZTN",
+          "mode": "list",
+          "cachedResultName": "operaciones-n8n"
+        },
+        "text": "={{ \n'✅ ' + $json.evento +\n'\\n📧 Cliente: ' + $json.cliente_email +\n'\\n📝 Asunto: ' + $json.asunto\n}}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1440,
+        80
+      ],
+      "id": "bc0d3b4e-5db6-4476-a6c3-2aec99e8f229",
+      "name": "09 Slack - Notificar a operaciones",
+      "webhookId": "8d807273-6be0-4ff2-ab1b-cacbbad89a95",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Hwu98axKNeF4SD8m",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 Gmail - Entrada de soporte": {
+      "main": [
+        [
+          {
+            "node": "02 IF - Bloquear respuestas automáticas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 IF - Bloquear respuestas automáticas": {
+      "main": [
+        [],
+        [
+          {
+            "node": "03 Edit Fields - Normalizar datos del cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 Edit Fields - Normalizar datos del cliente": {
+      "main": [
+        [
+          {
+            "node": "04 HubSpot - Buscar contacto por email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 HubSpot - Buscar contacto por email": {
+      "main": [
+        [
+          {
+            "node": "05 IF - Contacto existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 IF - Contacto existe": {
+      "main": [
+        [
+          {
+            "node": "07 Gmail - Crear borrador HITL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "06 HubSpot - Crear contacto nuevo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 Gmail - Crear borrador HITL": {
+      "main": [
+        [
+          {
+            "node": "08 Edit Fields - Limpiar payload para Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 Edit Fields - Limpiar payload para Slack": {
+      "main": [
+        [
+          {
+            "node": "09 Slack - Notificar a operaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 HubSpot - Crear contacto nuevo": {
+      "main": [
+        [
+          {
+            "node": "07 Gmail - Crear borrador HITL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "29f2fd4d-d708-4a44-bb9c-3efe8449db96",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9b65be5521d2543a901c16da783b2ffec82a1a1554bb420be674931c23e78d61"
+  },
+  "id": "ZayFtDkx29LRSyWn",
+  "tags": []
+}
